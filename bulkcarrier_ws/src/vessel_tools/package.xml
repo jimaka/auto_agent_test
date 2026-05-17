@@ -10,4 +10,9 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>rosbag</exec_depend>
   <exec_depend>vessel_msgs</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>python3-nose</test_depend>
 </package>

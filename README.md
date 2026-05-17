@@ -40,7 +40,12 @@ roslaunch vessel_bringup stack.launch use_baseline:=true
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
+# Single bag -> NPZ (Ts=0.25 s, rudder deg->rad)
 rosrun vessel_tools bag2dataset.py --bag data/raw/trial.bag --out data/processed/run1
+
+# Manifest pipeline (multi-bag, train/val/test splits)
+rosrun vessel_tools time_sync.py --manifest data/manifests/example_trial.yaml
+
 rosrun vessel_identification train.py --data data/processed/run1
 rosrun vessel_identification export_model.py --checkpoint runs/koopman/best.pt \
   --registry bulkcarrier_ws/src/vessel_control/model_registry --model-id koopman_v20260517_001
@@ -64,6 +69,20 @@ Template: `bulkcarrier_ws/src/vessel_control/model_registry/_template/`
 
 Trained bundles are gitignored; copy template fields from `meta.yaml` when exporting.
 
+## Data pipeline output
+
+Processed datasets contain `train.npz`, `val.npz`, `test.npz` (when splits are configured), plus `meta.json` and a copy of `manifest.yaml`. Arrays:
+
+| Key | Shape | Description |
+|-----|-------|-------------|
+| `t` | `[T]` | Time [s] |
+| `x` | `[T, 6]` | `x,y,psi,u,v,r` |
+| `u` | `[T, 2]` | `delta_rad, rpm` |
+| `d` | `[T, 2]` | Wind speed/dir (optional) |
+
+Bag reading uses `rosbag` when ROS is sourced, otherwise `rosbags` (`pip install rosbags`).
+
 ## Status
 
-Scaffold only — ONNX lift, OSQP MPC, MMG plant, and training loops are `TODO` stubs.
+- **Done:** `vessel_tools` bag→dataset + manifest pipeline
+- **TODO:** ONNX lift, OSQP MPC, MMG plant, Koopman training
