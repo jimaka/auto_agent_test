@@ -1,0 +1,11 @@
+<launch>
+  <arg name="bag_name" default="trial"/>
+  <node pkg="rosbag" type="record" name="record" args="-O $(arg bag_name)
+    /ins/state
+    /sensors/rudder_deg
+    /sensors/shaft_rpm
+    /sensors/wind
+    /trajectory/ref
+    /control/cmd
+    /control/status"/>
+</launch>

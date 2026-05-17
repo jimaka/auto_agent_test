@@ -1,0 +1,5 @@
+Ts: 0.25
+horizon_N: 30
+nz: 64
+control_rate_hz: 4.0
+max_latency_ms: 300

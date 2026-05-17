@@ -1,0 +1,74 @@
+schema_version: '1.0'
+model_id: koopman_test
+created_at: '2026-05-17T05:11:11.417363+00:00'
+ship_id: bulkcarrier_65m
+description: Exported from best.pt
+Ts: 0.25
+nz: 16
+nx: 6
+nu: 2
+nd: 0
+horizon_N: 10
+state_names:
+- x
+- y
+- psi
+- u
+- v
+- r
+state_units:
+- m
+- m
+- rad
+- m/s
+- m/s
+- rad/s
+input_names:
+- delta
+- n
+input_units:
+- rad
+- rpm
+normalization:
+  x:
+    file: norm_x.json
+    method: standard
+  u:
+    file: norm_u.json
+    method: standard
+  z:
+    method: none
+files:
+  A:
+    path: A.bin
+    dtype: float64
+    shape:
+    - 16
+    - 16
+  B:
+    path: B.bin
+    dtype: float64
+    shape:
+    - 16
+    - 2
+  encoder:
+    path: encoder.onnx
+    opset: 18
+    input: x_norm
+    output: z
+  Cx:
+    path: Cx.bin
+    dtype: float64
+    shape:
+    - 6
+    - 16
+    optional: true
+  tube:
+    path: tube_tightening.csv
+validation:
+  checkpoint_epoch: 8
+  checkpoint_val_loss: 0.37570415437221527
+  sil_passed: false
+  n_step_z_rmse: 0.07703086733818054
+  n_step_x_rmse: 0.8862350583076477
+baseline_fallback: nomoto_mpc_v1
