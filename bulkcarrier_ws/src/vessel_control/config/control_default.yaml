@@ -1,0 +1,22 @@
+control_rate: 4.0
+control_mode: koopman_mpc
+model_path: $(find vessel_control)/model_registry/_template
+mpc:
+  horizon_N: 30
+  Ts: 0.25
+  weights:
+    w_cross: 10.0
+    w_psi: 5.0
+    w_u: 1.0
+    w_delta: 0.1
+    w_n: 0.01
+    w_os: 100.0
+constraints:
+  delta_min: -0.61
+  delta_max: 0.61
+  delta_rate_max: 0.035
+  n_min: 0.0
+  n_max: 120.0
+  n_rate_max: 5.0
+tube:
+  enabled: true
