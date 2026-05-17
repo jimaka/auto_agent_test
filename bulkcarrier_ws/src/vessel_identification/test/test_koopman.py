@@ -70,15 +70,19 @@ class TestKoopmanPipeline(unittest.TestCase):
                 data_dir=data_dir,
             )
             self.assertTrue((out / "encoder.onnx").is_file())
+            self.assertTrue((out / "encoder_io.json").is_file())
             self.assertTrue((out / "A.bin").is_file())
             self.assertTrue((out / "meta.yaml").is_file())
             self.assertTrue((out / "checksums.sha256").is_file())
 
+            import json
             import onnxruntime as ort
 
+            with (out / "encoder_io.json").open("r", encoding="utf-8") as f:
+                io_doc = json.load(f)
             sess = ort.InferenceSession(str(out / "encoder.onnx"))
             inp = np.zeros((1, 6), dtype=np.float32)
-            z = sess.run(None, {"x_norm": inp})[0]
+            z = sess.run(None, {io_doc["input_name"]: inp})[0]
             self.assertEqual(z.shape, (1, 16))
 
 

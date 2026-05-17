@@ -1,0 +1,18 @@
+{
+  "format_version": "1.0",
+  "opset": 18,
+  "input_name": "x_norm",
+  "output_name": "z",
+  "nx": 6,
+  "nz": 16,
+  "dtype": "float32",
+  "input_shape": [
+    "batch",
+    6
+  ],
+  "output_shape": [
+    "batch",
+    16
+  ],
+  "dynamic_batch": true
+}

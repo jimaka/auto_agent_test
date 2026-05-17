@@ -24,7 +24,7 @@ normalization:
 files:
   A: {path: "A.bin", dtype: "float64", shape: [64, 64]}
   B: {path: "B.bin", dtype: "float64", shape: [64, 2]}
-  encoder: {path: "encoder.onnx", opset: 17, input: "x_norm", output: "z"}
+  encoder: {path: "encoder.onnx", io_manifest: "encoder_io.json", opset: 18, input: "x_norm", output: "z"}
   Cx: {path: "Cx.bin", dtype: "float64", shape: [6, 64], optional: true}
   tube: {path: "tube_tightening.csv"}
 

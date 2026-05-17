@@ -58,6 +58,17 @@ class KoopmanMpcController:
         else:
             self.Cx = np.eye(self.nx, self.nz)
 
+        io_path = self.model_dir / "encoder_io.json"
+        if io_path.is_file():
+            with io_path.open("r", encoding="utf-8") as f:
+                io_spec = json.load(f)
+            self.encoder_input = io_spec.get("input_name", "x_norm")
+            self.encoder_output = io_spec.get("output_name", "z")
+            self.nx = int(io_spec.get("nx", self.nx))
+            self.nz = int(io_spec.get("nz", self.nz))
+        else:
+            self.encoder_input, self.encoder_output = "x_norm", "z"
+
         self.session = ort.InferenceSession(
             str(self.model_dir / "encoder.onnx"), providers=["CPUExecutionProvider"]
         )
@@ -86,7 +97,9 @@ class KoopmanMpcController:
 
     def lift(self, state: VesselState) -> np.ndarray:
         x = self._norm_x(state.as_vector()).astype(np.float32)
-        z = self.session.run(None, {"x_norm": x.reshape(1, -1)})[0].reshape(-1)
+        z = self.session.run(
+            None, {self.encoder_input: x.reshape(1, -1)}
+        )[0].reshape(-1)
         return z[: self.nz]
 
     def _build_prediction(self) -> None:

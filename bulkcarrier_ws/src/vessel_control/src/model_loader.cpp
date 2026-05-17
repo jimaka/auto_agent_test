@@ -27,6 +27,38 @@ bool parse_yaml_scalar_int(const std::string& line, const std::string& key, int&
   return true;
 }
 
+bool parse_json_string(const std::string& text, const std::string& key, std::string& out) {
+  const std::string pat = "\"" + key + "\"";
+  auto pos = text.find(pat);
+  if (pos == std::string::npos) return false;
+  pos = text.find(':', pos);
+  if (pos == std::string::npos) return false;
+  auto q1 = text.find('"', pos);
+  if (q1 == std::string::npos) return false;
+  auto q2 = text.find('"', q1 + 1);
+  if (q2 == std::string::npos) return false;
+  out = text.substr(q1 + 1, q2 - q1 - 1);
+  return true;
+}
+
+bool parse_json_number(const std::string& text, const std::string& key, double& out) {
+  const std::string pat = "\"" + key + "\"";
+  auto pos = text.find(pat);
+  if (pos == std::string::npos) return false;
+  pos = text.find(':', pos);
+  if (pos == std::string::npos) return false;
+  ++pos;
+  while (pos < text.size() && std::isspace(static_cast<unsigned char>(text[pos]))) ++pos;
+  const auto end = text.find_first_of(",}\n", pos);
+  if (end == std::string::npos) return false;
+  try {
+    out = std::stod(text.substr(pos, end - pos));
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
 bool parse_json_array(const std::string& text, const std::string& key, std::vector<double>& out) {
   const std::string pat = "\"" + key + "\"";
   auto pos = text.find(pat);
@@ -48,7 +80,46 @@ bool parse_json_array(const std::string& text, const std::string& key, std::vect
   return !out.empty();
 }
 
+bool parse_yaml_quoted_value(const std::string& line, const std::string& key, std::string& out) {
+  const auto pos = line.find(key + ":");
+  if (pos == std::string::npos) return false;
+  auto q1 = line.find('"', pos);
+  if (q1 != std::string::npos) {
+    auto q2 = line.find('"', q1 + 1);
+    if (q2 != std::string::npos) {
+      out = line.substr(q1 + 1, q2 - q1 - 1);
+      return true;
+    }
+  }
+  auto c = line.find(':', pos);
+  if (c == std::string::npos) return false;
+  std::string val = line.substr(c + 1);
+  auto b = val.find_first_not_of(" \t");
+  auto e = val.find_last_not_of(" \t\r\n");
+  if (b == std::string::npos) return false;
+  out = val.substr(b, e - b + 1);
+  return true;
+}
+
 }  // namespace
+
+bool load_encoder_io_json(const std::string& path, EncoderIoSpec& spec) {
+  std::ifstream in(path);
+  if (!in) return false;
+  std::stringstream ss;
+  ss << in.rdbuf();
+  const std::string txt = ss.str();
+  parse_json_string(txt, "input_name", spec.input_name);
+  parse_json_string(txt, "output_name", spec.output_name);
+  double nx = spec.nx, nz = spec.nz, opset = spec.opset;
+  parse_json_number(txt, "nx", nx);
+  parse_json_number(txt, "nz", nz);
+  parse_json_number(txt, "opset", opset);
+  spec.nx = static_cast<int>(nx);
+  spec.nz = static_cast<int>(nz);
+  spec.opset = static_cast<int>(opset);
+  return spec.nx > 0 && spec.nz > 0;
+}
 
 std::vector<double> read_f64_bin(const std::string& path, std::size_t expected) {
   std::ifstream in(path, std::ios::binary);
@@ -83,8 +154,18 @@ bool load_model_bundle(const std::string& model_dir, ModelBundle& out) {
   std::string line;
   while (std::getline(meta, line)) {
     parse_yaml_scalar_int(line, "nz", out.nz);
+    parse_yaml_scalar_int(line, "nx", out.nx);
+    parse_yaml_scalar_int(line, "nu", out.nu);
     parse_yaml_scalar_int(line, "horizon_N", out.horizon_N);
     parse_yaml_scalar(line, "Ts", out.Ts);
+    if (line.find("input:") != std::string::npos && line.find("encoder") == std::string::npos) {
+      std::string iname;
+      if (parse_yaml_quoted_value(line, "input", iname)) out.encoder_io.input_name = iname;
+    }
+    if (line.find("output:") != std::string::npos) {
+      std::string oname;
+      if (parse_yaml_quoted_value(line, "output", oname)) out.encoder_io.output_name = oname;
+    }
     if (line.find("model_id:") != std::string::npos) {
       auto q1 = line.find('"');
       auto q2 = line.rfind('"');
@@ -121,6 +202,13 @@ bool load_model_bundle(const std::string& model_dir, ModelBundle& out) {
   }
 
   out.encoder_onnx_path = model_dir + "/encoder.onnx";
+  out.encoder_io.nx = out.nx;
+  out.encoder_io.nz = out.nz;
+  load_encoder_io_json(model_dir + "/encoder_io.json", out.encoder_io);
+
+  if (out.nz > NZ) {
+    return false;
+  }
 
   std::ifstream nxj(model_dir + "/norm_x.json");
   std::ifstream nuj(model_dir + "/norm_u.json");

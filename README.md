@@ -52,6 +52,9 @@ rosrun vessel_identification validate_horizon.py --checkpoint runs/koopman/best.
 rosrun vessel_identification export_model.py --checkpoint runs/koopman/best.pt \
   --registry bulkcarrier_ws/src/vessel_control/model_registry \
   --model-id koopman_v20260517_001 --data data/processed/ship_trials_example
+
+# PyTorch encoder -> ONNX (+ encoder_io.json for C++ ORT)
+rosrun vessel_identification convert_to_onnx.py --checkpoint runs/koopman/best.pt --out-dir /tmp/onnx_export
 ```
 
 ## Topics

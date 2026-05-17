@@ -9,6 +9,7 @@ catkin_install_python(PROGRAMS
   scripts/train.py
   scripts/validate_horizon.py
   scripts/export_model.py
+  scripts/convert_to_onnx.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

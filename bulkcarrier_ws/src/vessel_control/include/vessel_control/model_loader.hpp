@@ -42,18 +42,31 @@ struct InputConstraints {
   double n_rate_max{5.0};
 };
 
+struct EncoderIoSpec {
+  std::string input_name{"x_norm"};
+  std::string output_name{"z"};
+  int nx{NX};
+  int nz{NZ};
+  int opset{18};
+};
+
 struct ModelBundle {
   std::string model_dir;
   std::string model_id;
   double Ts{0.25};
   int nz{NZ};
+  int nx{NX};
+  int nu{NU};
   int horizon_N{DEFAULT_HORIZON};
   NormParams norm;
   KoopmanMatrices mats;
   MpcWeights weights;
   InputConstraints constraints;
   std::string encoder_onnx_path;
+  EncoderIoSpec encoder_io;
 };
+
+bool load_encoder_io_json(const std::string& path, EncoderIoSpec& spec);
 
 bool load_model_bundle(const std::string& model_dir, ModelBundle& out);
 

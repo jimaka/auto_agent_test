@@ -13,22 +13,10 @@ import torch
 import yaml
 
 from vessel_identification.config import KoopmanConfig
-from vessel_identification.models.koopman import DeepKoopman, MlpEncoder
-from vessel_identification.normalizer import Normalizer
-from vessel_identification.trainer import load_checkpoint
 from vessel_identification.dataset import load_npz_split
+from vessel_identification.onnx_convert import export_encoder_onnx
+from vessel_identification.trainer import load_checkpoint
 from vessel_identification.validate import horizon_metrics, write_tube_csv
-
-
-class EncoderOnnxWrapper(torch.nn.Module):
-    """ONNX: normalized x [B, nx] -> z [B, nz]."""
-
-    def __init__(self, encoder: MlpEncoder) -> None:
-        super().__init__()
-        self.encoder = encoder
-
-    def forward(self, x_norm: torch.Tensor) -> torch.Tensor:
-        return self.encoder(x_norm)
 
 
 def _write_f64_bin(path: Path, arr: np.ndarray) -> None:
@@ -73,19 +61,8 @@ def export_bundle(
     with (out_dir / "decoder_bias.json").open("w", encoding="utf-8") as f:
         json.dump({"bias": dec_b.tolist()}, f)
 
-    wrapper = EncoderOnnxWrapper(model.encoder).eval()
-    dummy = torch.zeros(1, cfg.nx, dtype=torch.float32)
-    onnx_path = out_dir / "encoder.onnx"
-    export_kw = dict(
-        input_names=["x_norm"],
-        output_names=["z"],
-        dynamic_axes={"x_norm": {0: "batch"}, "z": {0: "batch"}},
-        opset_version=opset,
-    )
-    try:
-        torch.onnx.export(wrapper, dummy, str(onnx_path), dynamo=False, **export_kw)
-    except TypeError:
-        torch.onnx.export(wrapper, dummy, str(onnx_path), **export_kw)
+    conv = export_encoder_onnx(model, cfg, out_dir, opset=opset, verify=True)
+    onnx_path = conv.onnx_path
 
     val_metrics: Dict = {}
     if data_dir is not None and (data_dir / "val.npz").is_file():
@@ -125,9 +102,10 @@ def export_bundle(
             "B": {"path": "B.bin", "dtype": "float64", "shape": [cfg.nz, cfg.nu]},
             "encoder": {
                 "path": "encoder.onnx",
+                "io_manifest": "encoder_io.json",
                 "opset": opset,
-                "input": "x_norm",
-                "output": "z",
+                "input": conv.input_name,
+                "output": conv.output_name,
             },
             "Cx": {"path": "Cx.bin", "dtype": "float64", "shape": [cfg.nx, cfg.nz], "optional": True},
             "tube": {"path": "tube_tightening.csv"},

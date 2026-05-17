@@ -29,7 +29,7 @@ cmake --build build -j
 
 ## Runtime
 
-- Loads `meta.yaml`, `norm_*.json`, `encoder.onnx`, `A.bin`, `B.bin`, optional `tube_tightening.csv`
+- Loads `meta.yaml`, `norm_*.json`, `encoder.onnx`, `encoder_io.json` (ORT I/O names), `A.bin`, `B.bin`, optional `tube_tightening.csv`
 - Subscribes: `/ins/state`, `/trajectory/ref`, `/sensors/rudder_deg`, `/sensors/shaft_rpm`
 - Publishes: `/control/cmd`, `/control/status`
 

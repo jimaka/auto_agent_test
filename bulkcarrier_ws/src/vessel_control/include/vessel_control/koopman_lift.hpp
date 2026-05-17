@@ -19,6 +19,7 @@ class KoopmanLift {
   bool lift(const StateVector& x, LiftVector& z) const;
 
   int nz() const { return nz_; }
+  int nx() const { return nx_; }
   const ModelBundle& bundle() const { return bundle_; }
 
  private:
@@ -26,6 +27,7 @@ class KoopmanLift {
 
   ModelBundle bundle_{};
   int nz_{NZ};
+  int nx_{NX};
   bool loaded_{false};
 
   struct OnnxImpl;

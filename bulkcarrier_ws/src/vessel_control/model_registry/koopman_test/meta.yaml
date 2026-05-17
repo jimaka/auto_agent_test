@@ -53,6 +53,7 @@ files:
     - 2
   encoder:
     path: encoder.onnx
+    io_manifest: encoder_io.json
     opset: 18
     input: x_norm
     output: z

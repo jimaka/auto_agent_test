@@ -27,6 +27,19 @@ rosrun vessel_identification export_model.py \
   --registry $(rospack find vessel_control)/model_registry \
   --model-id koopman_v20260517_001 \
   --data data/processed/ship_trials_example
+
+# PyTorch checkpoint -> ONNX only (verified Torch vs ORT parity)
+rosrun vessel_identification convert_to_onnx.py \
+  --checkpoint runs/koopman/best.pt \
+  --out-dir /tmp/onnx_export
+
+# Full deploy bundle (ONNX + A/B + encoder_io.json + meta.yaml)
+rosrun vessel_identification convert_to_onnx.py \
+  --checkpoint runs/koopman/best.pt \
+  --full-bundle \
+  --registry $(rospack find vessel_control)/model_registry \
+  --model-id koopman_v20260517_001 \
+  --data data/processed/ship_trials_example
 ```
 
 ## Export bundle
@@ -34,6 +47,7 @@ rosrun vessel_identification export_model.py \
 | File | Content |
 |------|---------|
 | `encoder.onnx` | \(\phi(x_{norm})\) |
+| `encoder_io.json` | ONNX Runtime tensor names and dimensions for C++/SIL |
 | `A.bin`, `B.bin` | `float64` row-major |
 | `Cx.bin` | Decoder weights `[nx, nz]` |
 | `norm_x.json`, `norm_u.json` | Standardization |

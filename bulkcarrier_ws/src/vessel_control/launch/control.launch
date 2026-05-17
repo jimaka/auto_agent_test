@@ -1,5 +1,5 @@
 <launch>
-  <arg name="model_path" default="$(find vessel_control)/model_registry/_template"/>
+  <arg name="model_path" default="$(find vessel_control)/model_registry/koopman_test"/>
   <arg name="control_mode" default="koopman_mpc"/>
 
   <node pkg="vessel_control" type="vessel_control_node" name="vessel_control" output="screen">
