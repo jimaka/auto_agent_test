@@ -1,0 +1,4 @@
+control_rate: 4.0
+nomoto:
+  K: 0.5
+  T: 20.0

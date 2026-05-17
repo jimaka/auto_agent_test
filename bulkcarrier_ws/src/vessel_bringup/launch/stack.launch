@@ -1,0 +1,15 @@
+<launch>
+  <arg name="use_baseline" default="false"/>
+  <arg name="model_path" default="$(find vessel_control)/model_registry/_template"/>
+
+  <group unless="$(arg use_baseline)">
+    <include file="$(find vessel_control)/launch/control.launch">
+      <arg name="model_path" value="$(arg model_path)"/>
+      <arg name="control_mode" value="koopman_mpc"/>
+    </include>
+  </group>
+
+  <group if="$(arg use_baseline)">
+    <include file="$(find vessel_baseline)/launch/baseline.launch"/>
+  </group>
+</launch>
