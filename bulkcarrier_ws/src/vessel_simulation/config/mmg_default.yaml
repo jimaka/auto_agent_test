@@ -1,0 +1,34 @@
+ship:
+  Lpp: 65.0
+  B: 12.6
+  d: 4.5
+  rho: 1025.0
+  m: 4200000.0
+  Iz: 3.5e9
+
+hydro:
+  Xu: -12000.0
+  Yv: -80000.0
+  Nr: -8.0e6
+  Yr: -2.0e6
+  Nv: -2.0e6
+  Ndelta: -4.0e6
+  Xthrust: 8.0
+  Yvv: -2000.0
+  Nrr: -1.0e8
+
+actuator:
+  delta_max_deg: 35.0
+  delta_rate_max_deg_s: 2.0
+  n_min: 0.0
+  n_max: 120.0
+  n_rate_max: 5.0
+
+mmg:
+  integration: rk4
+  dt: 0.05
+
+sil:
+  control_Ts: 0.25
+  default_duration_s: 600.0
+  u0_mps: 5.0
