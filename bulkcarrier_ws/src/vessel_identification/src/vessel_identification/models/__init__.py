@@ -1,1 +1,3 @@
-"""Encoder and (A, B) Koopman model definitions."""
+from vessel_identification.models.koopman import DeepKoopman, MlpEncoder
+
+__all__ = ["DeepKoopman", "MlpEncoder"]

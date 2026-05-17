@@ -4,4 +4,5 @@ pyyaml>=6.0
 rosbags>=0.9.20
 torch>=2.0
 onnx>=1.14
+onnxscript>=0.1.0
 onnxruntime>=1.15

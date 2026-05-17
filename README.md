@@ -46,9 +46,12 @@ rosrun vessel_tools bag2dataset.py --bag data/raw/trial.bag --out data/processed
 # Manifest pipeline (multi-bag, train/val/test splits)
 rosrun vessel_tools time_sync.py --manifest data/manifests/example_trial.yaml
 
-rosrun vessel_identification train.py --data data/processed/run1
+rosrun vessel_identification train.py --data data/processed/ship_trials_example --out runs/koopman
+rosrun vessel_identification validate_horizon.py --checkpoint runs/koopman/best.pt \
+  --data data/processed/ship_trials_example
 rosrun vessel_identification export_model.py --checkpoint runs/koopman/best.pt \
-  --registry bulkcarrier_ws/src/vessel_control/model_registry --model-id koopman_v20260517_001
+  --registry bulkcarrier_ws/src/vessel_control/model_registry \
+  --model-id koopman_v20260517_001 --data data/processed/ship_trials_example
 ```
 
 ## Topics
@@ -85,4 +88,5 @@ Bag reading uses `rosbag` when ROS is sourced, otherwise `rosbags` (`pip install
 ## Status
 
 - **Done:** `vessel_tools` bag→dataset + manifest pipeline
-- **TODO:** ONNX lift, OSQP MPC, MMG plant, Koopman training
+- **Done:** `vessel_identification` Deep Koopman train / validate / ONNX export
+- **TODO:** C++ ONNX Runtime lift, OSQP MPC, MMG SIL
