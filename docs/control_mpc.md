@@ -34,3 +34,18 @@ cmake --build build -j
 - Publishes: `/control/cmd`, `/control/status`
 
 MPC optimizes in **normalized** control space; outputs physical `delta_rad` and `rpm`.
+
+## Hard constraints
+
+| 类型 | 形式（物理量） | QP 中实现 |
+|------|----------------|-----------|
+| 舵角 / 转速 | \(u_{min} \le u_k \le u_{max}\) | 归一化盒约束 |
+| 舵速 / 转速变化率 | \(\|u_k-u_{k-1}\| \le \dot u_{max} T_s\) | \(k=0\) 相对实测 `u_prev`；\(k\ge1\) 相邻步差分 |
+
+参数来自 `meta.yaml` / `control_default.yaml`：`delta_rate_max` [rad/s]、`n_rate_max` [rpm/s]。
+
+验证（无 ROS）：
+
+```bash
+./build/rate_constraint_test ../model_registry/koopman_test
+```

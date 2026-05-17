@@ -11,6 +11,35 @@ namespace vessel_control {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
+constexpr double kOsqpInf = 1e20;
+
+struct ConstraintRow {
+  std::vector<int> cols;
+  std::vector<double> vals;
+  double l{0.0};
+  double u{0.0};
+};
+
+void rows_to_csc(const std::vector<ConstraintRow>& rows, OsqpProblem& prob) {
+  prob.m = static_cast<int>(rows.size());
+  prob.A_row_ptr.assign(static_cast<std::size_t>(prob.m + 1), 0);
+  prob.A_col_idx.clear();
+  prob.A_data.clear();
+  prob.l.resize(static_cast<std::size_t>(prob.m));
+  prob.u.resize(static_cast<std::size_t>(prob.m));
+  int nnz = 0;
+  for (int r = 0; r < prob.m; ++r) {
+    prob.A_row_ptr[static_cast<std::size_t>(r)] = nnz;
+    prob.l[static_cast<std::size_t>(r)] = rows[static_cast<std::size_t>(r)].l;
+    prob.u[static_cast<std::size_t>(r)] = rows[static_cast<std::size_t>(r)].u;
+    for (std::size_t k = 0; k < rows[static_cast<std::size_t>(r)].cols.size(); ++k) {
+      prob.A_col_idx.push_back(rows[static_cast<std::size_t>(r)].cols[k]);
+      prob.A_data.push_back(rows[static_cast<std::size_t>(r)].vals[k]);
+      ++nnz;
+    }
+  }
+  prob.A_row_ptr[static_cast<std::size_t>(prob.m)] = nnz;
+}
 
 void mat_mul(const std::vector<double>& A, int rows, int cols, const std::vector<double>& B, int bcols,
              std::vector<double>& C) {
@@ -232,34 +261,45 @@ bool MpcOsqp::build_osqp_problem(const std::vector<double>& z0,
   auto norm_u = [&](double u_phys, int j) {
     return (u_phys - bundle_.norm.mu_u[j]) / bundle_.norm.sigma_u[j];
   };
+  auto du_norm = [&](int j) {
+    const double rate = (j == 0) ? bundle_.constraints.delta_rate_max : bundle_.constraints.n_rate_max;
+    return (rate * bundle_.Ts) / bundle_.norm.sigma_u[j];
+  };
 
-  const int m = N * nu;
-  prob.m = m;
   prob.n = n;
-  prob.A_row_ptr.assign(static_cast<std::size_t>(m + 1), 0);
-  prob.A_col_idx.clear();
-  prob.A_data.clear();
-  prob.l.assign(static_cast<std::size_t>(m), 0.0);
-  prob.u.assign(static_cast<std::size_t>(m), 0.0);
+  std::vector<ConstraintRow> rows;
+  rows.reserve(static_cast<std::size_t>(N * nu * 3));
 
-  int nnz = 0;
-  int row = 0;
+  // Box constraints: umin <= u_k <= umax (normalized)
   for (int k = 0; k < N; ++k) {
     for (int j = 0; j < nu; ++j) {
       const int col = k * nu + j;
       const double umin = (j == 0) ? bundle_.constraints.delta_min : bundle_.constraints.n_min;
       const double umax = (j == 0) ? bundle_.constraints.delta_max : bundle_.constraints.n_max;
-      prob.A_row_ptr[static_cast<std::size_t>(row)] = nnz;
-      prob.A_col_idx.push_back(col);
-      prob.A_data.push_back(1.0);
-      prob.l[static_cast<std::size_t>(row)] = norm_u(umin, j);
-      prob.u[static_cast<std::size_t>(row)] = norm_u(umax, j);
-      ++nnz;
-      ++row;
+      rows.push_back({{col}, {1.0}, norm_u(umin, j), norm_u(umax, j)});
     }
   }
-  (void)u_prev;
-  prob.A_row_ptr[static_cast<std::size_t>(m)] = nnz;
+
+  // Hard rate limits: |u_k - u_{k-1}| <= du_norm (normalized), k=0 uses measured u_prev
+  for (int j = 0; j < nu; ++j) {
+    const int col0 = j;
+    const double prev_n = norm_u(u_prev[j], j);
+    const double du = du_norm(j);
+    rows.push_back({{col0}, {1.0}, prev_n - du, prev_n + du});
+  }
+  for (int k = 1; k < N; ++k) {
+    for (int j = 0; j < nu; ++j) {
+      const int col = k * nu + j;
+      const int colm = (k - 1) * nu + j;
+      const double du = du_norm(j);
+      // u_k - u_{k-1} <= du
+      rows.push_back({{col, colm}, {1.0, -1.0}, -kOsqpInf, du});
+      // u_k - u_{k-1} >= -du
+      rows.push_back({{col, colm}, {1.0, -1.0}, -du, kOsqpInf});
+    }
+  }
+
+  rows_to_csc(rows, prob);
   return true;
 }
 
