@@ -1,0 +1,49 @@
+schema_version: "1.0"
+model_id: "koopman_template"
+created_at: "2026-05-17T00:00:00Z"
+ship_id: "bulkcarrier_65m"
+description: "Template bundle — replace with trained export"
+
+Ts: 0.25
+nz: 64
+nx: 6
+nu: 2
+nd: 0
+horizon_N: 30
+
+state_names: [x, y, psi, u, v, r]
+state_units: [m, m, rad, m/s, m/s, rad/s]
+input_names: [delta, n]
+input_units: [rad, rpm]
+
+normalization:
+  x: {file: "norm_x.json", method: "standard"}
+  u: {file: "norm_u.json", method: "standard"}
+  z: {method: "none"}
+
+files:
+  A: {path: "A.bin", dtype: "float64", shape: [64, 64]}
+  B: {path: "B.bin", dtype: "float64", shape: [64, 2]}
+  encoder: {path: "encoder.onnx", io_manifest: "encoder_io.json", opset: 18, input: "x_norm", output: "z"}
+  Cx: {path: "Cx.bin", dtype: "float64", shape: [6, 64], optional: true}
+  tube: {path: "tube_tightening.csv"}
+
+mpc_weights:
+  w_cross: 10.0
+  w_psi: 5.0
+  w_u: 1.0
+  w_delta: 0.1
+  w_n: 0.01
+  w_os: 100.0
+
+constraints:
+  delta: {min: -0.61, max: 0.61}
+  delta_rate: {max: 0.035}
+  n: {min: 0.0, max: 120.0}
+  n_rate: {max: 5.0}
+
+validation:
+  sil_passed: false
+  n_step_z_rmse: null
+
+baseline_fallback: "nomoto_mpc_v1"

@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="vessel_baseline" type="vessel_baseline_node" name="vessel_baseline" output="screen">
+    <rosparam command="load" file="$(find vessel_baseline)/config/baseline_default.yaml"/>
+  </node>
+</launch>
