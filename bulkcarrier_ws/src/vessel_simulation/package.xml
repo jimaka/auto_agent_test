@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>vessel_simulation</name>
+  <version>0.1.0</version>
+  <description>3-DOF MMG simulation and SIL closed-loop tests</description>
+  <maintainer email="dev@example.com">vessel_team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <test_depend>python3-nose</test_depend>
+</package>

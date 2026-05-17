@@ -1,0 +1,27 @@
+dataset_id: ship_trials_example
+ship_id: bulkcarrier_65m
+Ts: 0.25
+
+sources:
+  - type: rosbag
+    id: trial_01
+    path: data/raw/example.bag
+
+topics:
+  ins: /ins/state
+  rudder_deg: /sensors/rudder_deg
+  shaft_rpm: /sensors/shaft_rpm
+  wind: /sensors/wind
+
+output:
+  root: data/processed/ship_trials_example
+  format: npz
+
+processing:
+  max_gap_sec: 1.0
+  rudder_in_degrees: true
+
+splits:
+  train: 0.7
+  val: 0.15
+  test: 0.15
