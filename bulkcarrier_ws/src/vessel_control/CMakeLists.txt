@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.14)
 project(vessel_control)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -8,12 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 QUIET)
-if(NOT EIGEN3_FOUND)
-  message(WARNING "Eigen3 not found; install libeigen3-dev for MPC build")
-endif()
 
-# Optional: OSQP + osqp-eigen when available
-# find_package(osqp REQUIRED)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/vessel_deps.cmake)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -28,15 +24,31 @@ include_directories(
 add_executable(vessel_control_node
   src/ros_node.cpp
   src/state_assembly.cpp
+  src/model_loader.cpp
   src/koopman_lift.cpp
   src/mpc_osqp.cpp
+  src/osqp_interface.cpp
   src/tube_constraints.cpp
   src/trajectory_tracker.cpp
 )
 
+target_compile_features(vessel_control_node PRIVATE cxx_std_14)
+target_compile_definitions(vessel_control_node PRIVATE VESSEL_HAS_ROS=1)
+
 target_link_libraries(vessel_control_node
   ${catkin_LIBRARIES}
 )
+
+if(VESSEL_USE_OSQP AND TARGET ${VESSEL_OSQP_TARGET})
+  target_compile_definitions(vessel_control_node PRIVATE VESSEL_USE_OSQP)
+  target_link_libraries(vessel_control_node ${VESSEL_OSQP_TARGET})
+  target_include_directories(vessel_control_node PRIVATE ${osqp_SOURCE_DIR}/include)
+endif()
+
+if(VESSEL_USE_ONNXRUNTIME AND TARGET ${VESSEL_ONNXRUNTIME_TARGET})
+  target_compile_definitions(vessel_control_node PRIVATE VESSEL_USE_ONNXRUNTIME)
+  target_link_libraries(vessel_control_node ${VESSEL_ONNXRUNTIME_TARGET})
+endif()
 
 add_dependencies(vessel_control_node ${catkin_EXPORTED_TARGETS} ${vessel_msgs_EXPORTED_TARGETS})
 

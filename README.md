@@ -89,4 +89,5 @@ Bag reading uses `rosbag` when ROS is sourced, otherwise `rosbags` (`pip install
 
 - **Done:** `vessel_tools` bag→dataset + manifest pipeline
 - **Done:** `vessel_identification` Deep Koopman train / validate / ONNX export
-- **TODO:** C++ ONNX Runtime lift, OSQP MPC, MMG SIL
+- **Done:** `vessel_control` ONNX Runtime encoder + OSQP MPC (see `docs/control_mpc.md`)
+- **TODO:** MMG SIL, full ROS integration test on ship

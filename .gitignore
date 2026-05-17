@@ -37,3 +37,4 @@ Thumbs.db
 # ONNX / binaries (trained artifacts)
 **/model_registry/koopman_v*/
 !**/model_registry/_template/
+!**/model_registry/koopman_test/

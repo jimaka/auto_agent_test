@@ -16,22 +16,30 @@ bool lookup_reference(const vessel_msgs::TrajectoryRef& traj, const ros::Time& t
     return false;
   }
   const double tk = t.toSec();
-  const auto& p = traj.points.back();
-  for (const auto& pt : traj.points) {
-    if (pt.t >= tk) {
-      x_ref = {pt.x, pt.y, pt.psi, pt.u, pt.v, pt.r};
-      if (errors) {
-        errors->e_cross = 0.0;
-        errors->e_psi = 0.0;
-        errors->e_u = 0.0;
-      }
+  if (tk <= traj.points.front().t) {
+    const auto& p0 = traj.points.front();
+    x_ref = {p0.x, p0.y, p0.psi, p0.u, p0.v, p0.r};
+    return true;
+  }
+  if (tk >= traj.points.back().t) {
+    const auto& pN = traj.points.back();
+    x_ref = {pN.x, pN.y, pN.psi, pN.u, pN.v, pN.r};
+    return true;
+  }
+  for (std::size_t i = 0; i + 1 < traj.points.size(); ++i) {
+    const auto& a = traj.points[i];
+    const auto& b = traj.points[i + 1];
+    if (tk >= a.t && tk <= b.t) {
+      const double alpha = (tk - a.t) / std::max(b.t - a.t, 1e-9);
+      x_ref = {a.x + alpha * (b.x - a.x),     a.y + alpha * (b.y - a.y),
+               a.psi + alpha * (b.psi - a.psi), a.u + alpha * (b.u - a.u),
+               a.v + alpha * (b.v - a.v),     a.r + alpha * (b.r - a.r)};
+      x_ref[2] = wrap_pi(x_ref[2]);
+      (void)errors;
       return true;
     }
   }
-  x_ref = {p.x, p.y, p.psi, p.u, p.v, p.r};
-  (void)errors;
-  (void)wrap_pi;
-  return true;
+  return false;
 }
 
 }  // namespace vessel_control
