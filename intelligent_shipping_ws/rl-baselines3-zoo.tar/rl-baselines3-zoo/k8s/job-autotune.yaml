@@ -1,0 +1,87 @@
+# 自主调参 Job — 多 GPU 并行搜索
+# 用法: kubectl apply -f k8s/job-autotune.yaml -n ship3dof
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: ship3dof-autotune-
+  namespace: ship3dof
+  labels:
+    app.kubernetes.io/name: ship3dof
+    app.kubernetes.io/component: autotune
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 172800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ship3dof
+        app.kubernetes.io/component: autotune
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1000
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: autotune
+          image: ship3dof:latest
+          imagePullPolicy: IfNotPresent
+          workingDir: /workspace/rl-zoo
+          command:
+            - python3
+            - scripts/ship_3dof/autotune_ship_3dof.py
+          args:
+            - --mmg-params
+            - scripts/ship_3dof/mmg_params_example.json
+            - --generate-trials-if-missing
+            - --hours
+            - "3"
+            - --max-parallel
+            - "2"
+            - --jobs-per-gpu
+            - "1"
+            - --output-root
+            - artifacts/ship_3dof/autotune
+            - --log-root
+            - logs_autotune
+            - --device
+            - cuda
+          env:
+            - name: PYTHONPATH
+              value: /workspace/rl-zoo
+          resources:
+            requests:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "2"
+            limits:
+              cpu: "32"
+              memory: "128Gi"
+              nvidia.com/gpu: "2"
+          volumeMounts:
+            - name: logs
+              mountPath: /workspace/rl-zoo/logs_pipeline
+            - name: logs-autotune
+              mountPath: /workspace/rl-zoo/logs_autotune
+            - name: artifacts
+              mountPath: /workspace/rl-zoo/artifacts
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: ship3dof-logs
+        - name: logs-autotune
+          persistentVolumeClaim:
+            claimName: ship3dof-logs-autotune
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: ship3dof-artifacts
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi

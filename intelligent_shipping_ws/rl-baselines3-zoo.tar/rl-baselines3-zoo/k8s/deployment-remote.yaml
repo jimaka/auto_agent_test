@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ship3dof-remote
+  namespace: ship3dof
+  labels:
+    app.kubernetes.io/name: ship3dof
+    app.kubernetes.io/component: remote-desktop
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ship3dof
+      app.kubernetes.io/component: remote-desktop
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ship3dof
+        app.kubernetes.io/component: remote-desktop
+    spec:
+      securityContext:
+        fsGroup: 1000
+      # GPU 节点选择（需要 NVIDIA GPU Operator 或 nvidia-device-plugin）
+      # 若集群无此标签，可改为 nodeSelector: {} 或删除此段
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: ship3dof
+          image: ship3dof-remote:latest
+          imagePullPolicy: IfNotPresent
+          # 如需推送到私有仓库，修改为:
+          # image: registry.example.com/ship3dof-remote:latest
+          ports:
+            - name: novnc
+              containerPort: 6080
+              protocol: TCP
+            - name: jupyter
+              containerPort: 8888
+              protocol: TCP
+            - name: tensorboard
+              containerPort: 6006
+              protocol: TCP
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
+          env:
+            - name: PYTHONPATH
+              value: /workspace/rl-zoo
+            - name: CONTAINER_USER
+              value: developer
+            - name: WORKSPACE
+              value: /workspace/rl-zoo
+            - name: VNC_RESOLUTION
+              value: "1920x1080"
+            - name: ENABLE_SSH
+              value: "true"
+            - name: JUPYTER_BASE_URL
+              value: "/jupyter"
+            - name: TENSORBOARD_PATH_PREFIX
+              value: "/tensorboard"
+            - name: VNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ship3dof-credentials
+                  key: vnc-password
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ship3dof-credentials
+                  key: jupyter-token
+            - name: SSH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ship3dof-credentials
+                  key: ssh-password
+          resources:
+            requests:
+              cpu: "4"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "16"
+              memory: "64Gi"
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: logs
+              mountPath: /workspace/rl-zoo/logs_pipeline
+            - name: artifacts
+              mountPath: /workspace/rl-zoo/artifacts
+            - name: shm
+              mountPath: /dev/shm
+          livenessProbe:
+            httpGet:
+              path: /vnc.html
+              port: novnc
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /vnc.html
+              port: novnc
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: ship3dof-logs
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: ship3dof-artifacts
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi

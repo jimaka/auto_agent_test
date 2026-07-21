@@ -1,0 +1,56 @@
+# Ingress — 通过域名访问远程桌面 / Jupyter / TensorBoard
+# 需要集群已安装 Ingress Controller（如 nginx-ingress / traefik）
+# 部署前修改 host 字段为实际域名
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ship3dof-remote
+  namespace: ship3dof
+  labels:
+    app.kubernetes.io/name: ship3dof
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+spec:
+  ingressClassName: nginx
+  rules:
+    # noVNC 不支持子路径，建议用独立子域名或 port-forward
+    - host: vnc.ship3dof.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ship3dof-remote
+                port:
+                  name: novnc
+    - host: ship3dof.example.com
+      http:
+        paths:
+          # Jupyter Lab（需配合 JUPYTER_BASE_URL=/jupyter）
+          - path: /jupyter
+            pathType: Prefix
+            backend:
+              service:
+                name: ship3dof-remote
+                port:
+                  name: jupyter
+          # TensorBoard（需配合 TENSORBOARD_PATH_PREFIX=/tensorboard）
+          - path: /tensorboard
+            pathType: Prefix
+            backend:
+              service:
+                name: ship3dof-remote
+                port:
+                  name: tensorboard
+  # tls:
+  #   - hosts:
+  #       - ship3dof.example.com
+  #       - vnc.ship3dof.example.com
+  #     secretName: ship3dof-tls

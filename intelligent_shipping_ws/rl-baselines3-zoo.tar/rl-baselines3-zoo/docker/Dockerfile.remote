@@ -1,0 +1,112 @@
+# Ship3DOF RL 远程开发环境（GPU + 远程桌面 + Jupyter + TensorBoard）
+#
+# 构建:
+#   docker build -t ship3dof-remote:latest -f docker/Dockerfile.remote .
+#
+# 运行（交互式远程桌面）:
+#   docker run --rm -it --gpus all \
+#     -p 6080:6080 -p 8888:8888 -p 6006:6006 -p 2222:22 \
+#     -v $(pwd):/workspace/rl-zoo \
+#     ship3dof-remote:latest
+#
+# 运行（一次性训练任务，不启动桌面）:
+#   docker run --rm --gpus all \
+#     -v $(pwd):/workspace/rl-zoo \
+#     ship3dof-remote:latest \
+#     python3 scripts/ship_3dof/run_known_mmg_pipeline.py --help
+
+ARG BASE_IMAGE=pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    CONTAINER_USER=developer \
+    WORKSPACE=/workspace/rl-zoo \
+    VNC_RESOLUTION=1920x1080 \
+    DISPLAY=:1 \
+    VNC_PORT=5901 \
+    NOVNC_PORT=6080 \
+    JUPYTER_PORT=8888 \
+    TENSORBOARD_PORT=6006 \
+    SSH_PORT=22 \
+    ENABLE_SSH=true \
+    JUPYTER_BASE_URL=/ \
+    TENSORBOARD_PATH_PREFIX=
+
+# 远程桌面 + 开发工具依赖
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+    swig \
+    ffmpeg \
+    git \
+    sudo \
+    supervisor \
+    dbus \
+    dbus-x11 \
+    xfce4 \
+    xfce4-terminal \
+    tigervnc-standalone-server \
+    tigervnc-common \
+    novnc \
+    websockify \
+    openssh-server \
+    x11-xserver-utils \
+    xauth \
+    locales \
+    curl \
+    && locale-gen en_US.UTF-8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
+
+# 创建非 root 用户（K8s 安全最佳实践）
+RUN useradd -m -s /bin/bash -u 1000 "${CONTAINER_USER}" \
+    && echo "${CONTAINER_USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && mkdir -p /var/log/supervisor /var/run/sshd "${WORKSPACE}" \
+    && chown -R "${CONTAINER_USER}:${CONTAINER_USER}" "${WORKSPACE}"
+
+WORKDIR ${WORKSPACE}
+
+# 先拷贝依赖清单，利用 Docker 层缓存
+COPY requirements.txt setup.py ./
+COPY rl_zoo3/version.txt ./rl_zoo3/version.txt
+COPY hyperparams ./hyperparams
+COPY rl_zoo3/plots ./rl_zoo3/plots
+
+RUN pip install -r requirements.txt \
+    && pip install scipy jupyterlab tensorboard \
+    && pip install -e .
+
+# 拷贝全部代码
+COPY . .
+
+RUN pip install -e . --no-deps \
+    && chown -R "${CONTAINER_USER}:${CONTAINER_USER}" "${WORKSPACE}"
+
+ENV PYTHONPATH=${WORKSPACE}
+
+# 冒烟测试
+RUN python -c "\
+import gymnasium as gym; import numpy as np; import custom_envs; \
+env = gym.make('ShipPathTracking3DOF-v0'); \
+obs, info = env.reset(seed=0); \
+obs, r, te, tr, i = env.step(np.zeros(2, dtype=np.float32)); \
+env.close(); \
+print('ShipPathTracking3DOF-v0 OK, obs shape:', obs.shape)"
+
+# 远程访问配置
+COPY docker/supervisord-remote.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint-remote.sh /usr/local/bin/entrypoint-remote.sh
+COPY docker/start-tensorboard.sh /usr/local/bin/start-tensorboard.sh
+RUN chmod +x /usr/local/bin/entrypoint-remote.sh /usr/local/bin/start-tensorboard.sh
+
+# 暴露端口: VNC/noVNC, Jupyter, TensorBoard, SSH
+EXPOSE 5901 6080 8888 6006 22
+
+USER root
+ENTRYPOINT ["/usr/local/bin/entrypoint-remote.sh"]
+CMD []

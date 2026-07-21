@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ship3dof
+
+resources:
+  - namespace.yaml
+  - secret.yaml
+  - pvc.yaml
+  - deployment-remote.yaml
+  - service.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "2.9.1"
+
+images:
+  - name: ship3dof-remote
+    newName: ship3dof-remote
+    newTag: latest
+  - name: ship3dof
+    newName: ship3dof
+    newTag: latest

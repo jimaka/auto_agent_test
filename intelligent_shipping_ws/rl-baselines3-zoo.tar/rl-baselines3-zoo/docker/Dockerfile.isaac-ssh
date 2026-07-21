@@ -1,0 +1,46 @@
+# Isaac Lab SSH 开发环境（基于本地 isaac-lab-base-koopman:v3.0，无需外网拉取）
+#
+# 前置: docker load -i isaac-lab-base-koopman_v3.0.tar
+# 构建: docker build -t isaac-lab-ssh:v3.0 -f docker/Dockerfile.isaac-ssh .
+# 运行: ./scripts/create_ssh_container.sh create
+
+ARG BASE_IMAGE=isaac-lab-base-koopman:v3.0
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ACCEPT_EULA=Y \
+    CONTAINER_USER=root \
+    WORKSPACE=/workspace/rl-zoo \
+    PYTHON=/isaac-sim/python.sh \
+    JUPYTER_PORT=8888 \
+    TENSORBOARD_PORT=6006 \
+    SSH_PORT=22 \
+    ENABLE_SSH=true \
+    JUPYTER_BASE_URL=/ \
+    TENSORBOARD_PATH_PREFIX=
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    openssh-server \
+    supervisor \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/log/supervisor /var/run/sshd "${WORKSPACE}"
+
+# 使用 Isaac Sim 内置 Python 安装 Jupyter / TensorBoard
+RUN ${PYTHON} -m pip install --no-cache-dir jupyterlab tensorboard
+
+WORKDIR ${WORKSPACE}
+
+COPY docker/supervisord-isaac-ssh.conf /etc/supervisor/conf.d/supervisord-isaac-ssh.conf
+COPY docker/entrypoint-isaac-ssh.sh /usr/local/bin/entrypoint-isaac-ssh.sh
+COPY docker/start-tensorboard.sh /usr/local/bin/start-tensorboard.sh
+RUN chmod +x /usr/local/bin/entrypoint-isaac-ssh.sh /usr/local/bin/start-tensorboard.sh
+
+EXPOSE 22 8888 6006
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-isaac-ssh.sh"]
+CMD []

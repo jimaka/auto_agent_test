@@ -1,0 +1,88 @@
+# 多 GPU 并行训练 Job — 每张卡独立 SAC / pipeline 任务
+# 用法: kubectl create -f k8s/job-multi-gpu.yaml -n ship3dof
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: ship3dof-multi-gpu-
+  namespace: ship3dof
+  labels:
+    app.kubernetes.io/name: ship3dof
+    app.kubernetes.io/component: multi-gpu-training
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 172800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ship3dof
+        app.kubernetes.io/component: multi-gpu-training
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1000
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: multi-gpu
+          image: ship3dof:latest
+          imagePullPolicy: IfNotPresent
+          workingDir: /workspace/rl-zoo
+          command:
+            - python3
+            - scripts/ship_3dof/multi_gpu_train.py
+          args:
+            - --mode
+            - pipeline
+            - --gpus
+            - "0,1"
+            - --jobs-per-gpu
+            - "1"
+            - --generate-trials-if-missing
+            - --mmg-params
+            - scripts/ship_3dof/mmg_params_example.json
+            - --output-root
+            - artifacts/ship_3dof/multi_gpu
+            - --log-root
+            - logs_multi_gpu
+            - --phase-steps
+            - "20000"
+            - "20000"
+            - "30000"
+            - --base-seed
+            - "42"
+            - --device
+            - cuda
+          env:
+            - name: PYTHONPATH
+              value: /workspace/rl-zoo
+          resources:
+            requests:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "2"
+            limits:
+              cpu: "32"
+              memory: "128Gi"
+              nvidia.com/gpu: "2"
+          volumeMounts:
+            - name: logs
+              mountPath: /workspace/rl-zoo/logs_multi_gpu
+            - name: artifacts
+              mountPath: /workspace/rl-zoo/artifacts
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: ship3dof-logs
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: ship3dof-artifacts
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi

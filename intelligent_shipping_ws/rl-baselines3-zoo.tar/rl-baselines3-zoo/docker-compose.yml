@@ -1,0 +1,78 @@
+# Ship3DOF RL 远程开发环境
+# 用法:
+#   docker compose up -d ship3dof-remote    # 启动远程桌面
+#   docker compose run --rm ship3dof-train  # 一次性训练任务
+#   docker compose logs -f ship3dof-remote # 查看启动日志
+
+services:
+  # 远程桌面开发环境（GPU + noVNC + Jupyter + TensorBoard + SSH）
+  ship3dof-remote:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.remote
+    image: ship3dof-remote:latest
+    container_name: ship3dof-remote
+    hostname: ship3dof-remote
+    environment:
+      - PYTHONPATH=/workspace/rl-zoo
+      - VNC_PASSWORD=${VNC_PASSWORD:-ship3dof}
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-ship3dof}
+      - SSH_PASSWORD=${SSH_PASSWORD:-ship3dof}
+      - VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
+      - ENABLE_SSH=${ENABLE_SSH:-true}
+    ports:
+      - "${NOVNC_PORT:-6080}:6080"       # noVNC 远程桌面（浏览器访问）
+      - "${JUPYTER_PORT:-8888}:8888"     # Jupyter Lab
+      - "${TENSORBOARD_PORT:-6006}:6006" # TensorBoard
+      - "${SSH_PORT:-2222}:22"           # SSH
+    volumes:
+      - .:/workspace/rl-zoo
+      - ship3dof-logs:/workspace/rl-zoo/logs_pipeline
+      - ship3dof-artifacts:/workspace/rl-zoo/artifacts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: "8gb"
+    gpus: all
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6080/vnc.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # 一次性训练任务（不启动远程桌面，适合 CI/批处理）
+  ship3dof-train:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ship3dof
+    image: ship3dof:latest
+    working_dir: /workspace/rl-zoo
+    environment:
+      - PYTHONPATH=/workspace/rl-zoo
+    volumes:
+      - .:/workspace/rl-zoo
+      - ship3dof-logs:/workspace/rl-zoo/logs_pipeline
+      - ship3dof-artifacts:/workspace/rl-zoo/artifacts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: "8gb"
+    gpus: all
+    profiles:
+      - train
+
+volumes:
+  ship3dof-logs:
+  ship3dof-artifacts:

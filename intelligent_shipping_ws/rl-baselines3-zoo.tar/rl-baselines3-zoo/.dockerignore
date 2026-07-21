@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+.gitmodules
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.eggs
+dist
+build
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.coverage
+htmlcov
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs & artifacts (mounted at runtime)
+logs/
+logs_pipeline/
+logs_autotune*/
+artifacts/
+rl-trained-agents/
+
+# Docs build
+docs/_build
+
+# K8s secrets (never bake into image)
+k8s/secrets/

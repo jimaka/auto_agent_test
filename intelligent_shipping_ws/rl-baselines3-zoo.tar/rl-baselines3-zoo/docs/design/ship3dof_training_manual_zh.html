@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh" xml:lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>船舶三自由度路径跟踪强化学习模型说明文档</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">船舶三自由度路径跟踪强化学习模型说明文档</h1>
+</header>
+<h1
+id="船舶三自由度路径跟踪强化学习模型-详细说明文档">船舶三自由度路径跟踪强化学习模型
+—— 详细说明文档</h1>
+<blockquote>
+<p>对象：<code>ShipPathTracking3DOF-v0</code> 环境 + SAC 课程训练模型
+本文对照源码逐模块说明，所有引用均给出文件与行号，便于查阅 实训基线：1
+km 路径、255 万步课程 SAC（seed 42），阶段 2 全难度下横向误差稳定于 ±1.5
+m 内</p>
+</blockquote>
+<hr />
+<h2 id="模型总览">1. 模型总览</h2>
+<p>本模型解决<strong>船舶在受限航道内的路径跟踪控制</strong>问题：智能体每
+0.1 s
+输出一次舵角速率与主机转速速率指令，驱动一艘三自由度（纵荡/横荡/艏摇）船舶沿一条
+1000 m
+双谐波参考路径航行，同时满足航道边界、速度包线、舵机/主机物理约束，并抵抗流扰、传感器噪声与水动力参数不确定性。</p>
+<p>技术栈：</p>
+<ul>
+<li><strong>环境</strong>：自研 Gymnasium
+环境（<code>custom_envs/ship_3dof/</code>），MMG 操纵性模型 +
+残差神经网络补偿；</li>
+<li><strong>算法</strong>：SAC（Soft Actor-Critic，Stable Baselines3
+2.9），MLP 512×512×512；</li>
+<li><strong>训练框架</strong>：rl-baselines3-zoo（<code>ExperimentManager</code>
+驱动）；</li>
+<li><strong>训练策略</strong>：三阶段课程学习（域随机化 → 流扰 →
+噪声+滞后），逐阶段热启动；</li>
+<li><strong>验收</strong>：M1–M4 门控的 Sim2Real
+流水线（<code>scripts/ship_3dof/run_known_mmg_pipeline.py</code>）。</li>
+</ul>
+<figure>
+<img src="figures/fig3_pipeline.png" alt="Sim2Real 流水线" />
+<figcaption aria-hidden="true">Sim2Real 流水线</figcaption>
+</figure>
+<hr />
+<h2 id="任务定义mdp">2. 任务定义（MDP）</h2>
+<h3 id="动作空间env.py63">2.1 动作空间（env.py:63）</h3>
+<p><code>Box(-1, 1, shape=(2,))</code>，每步（dt=0.1 s）执行：</p>
+<table>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>物理含义</th>
+<th>映射关系（env.py:258-259）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>a[0]</code></td>
+<td>舵角速率指令</td>
+<td><code>dot_delta_cmd = a[0] × 4°/s</code></td>
+</tr>
+<tr class="even">
+<td><code>a[1]</code></td>
+<td>主机转速速率指令</td>
+<td><code>dot_n_cmd = a[1] × 2.0 rpm/s</code></td>
+</tr>
+</tbody>
+</table>
+<p>阶段 2
+起指令再经一阶滞后（<code>actuator_lag=0.2 s</code>，env.py:261-267），模拟真实舵机/主机响应。</p>
+<h3 id="观测空间env.py57-62-164-187">2.2 观测空间（env.py:57-62,
+164-187）</h3>
+<p><code>Box(-5, 5, shape=(14,))</code>，原始量除以
+<code>DEFAULT_OBS_SCALE</code>（config.py:76-91）后裁剪到 ±5：</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>分量</th>
+<th>含义</th>
+<th>缩放系数</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td><code>e_y</code></td>
+<td>横向偏差（相对路径法线）</td>
+<td>12.0</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td><code>e_psi</code></td>
+<td>航向偏差（rad）</td>
+<td>π</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td><code>e_s</code></td>
+<td>距路径终点的弧长</td>
+<td>250.0</td>
+</tr>
+<tr class="even">
+<td>3-5</td>
+<td><code>u, v, r</code></td>
+<td>纵荡/横荡速度、艏摇角速度</td>
+<td>4.0 / 2.0 / 1.5</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td><code>beta</code></td>
+<td>漂角 <code>atan2(v, max(u,0.25))</code></td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>7-8</td>
+<td><code>delta, n</code></td>
+<td>当前舵角（rad）、转速（rpm）</td>
+<td>0.7 / 25.0</td>
+</tr>
+<tr class="odd">
+<td>9-10</td>
+<td><code>dot_delta_prev, dot_n_prev</code></td>
+<td>上一步实际指令（平滑性依据）</td>
+<td>0.2 / 2.5</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td><code>kappa_l</code></td>
+<td>局部路径曲率</td>
+<td>0.01</td>
+</tr>
+<tr class="odd">
+<td>12-13</td>
+<td><code>d_u_hat, d_v_hat</code></td>
+<td>流扰估计（真值 + 估计噪声）</td>
+<td>0.6 / 0.6</td>
+</tr>
+</tbody>
+</table>
+<p>阶段 2 起 <code>e_y/e_psi/u/v/r</code>
+叠加高斯传感器噪声（<code>_sensor_noise</code>, env.py:159-162）。</p>
+<h3 id="episode-设定">2.3 episode 设定</h3>
+<ul>
+<li>路径长度 1000 m（<code>path_length</code>, config.py:60），最长 3000
+步 = 300 s（<code>max_steps</code>, config.py:53）；</li>
+<li>每回合重新生成路径（随机相位、曲率 ±15%
+抖动，<code>_build_path</code>, env.py:113-121）；</li>
+<li>船舶出生在路径起点附近（详见 §8 关键修复）。</li>
+</ul>
+<hr />
+<h2 id="船舶动力学模型dynamics.py">3. 船舶动力学模型（dynamics.py）</h2>
+<figure>
+<img src="figures/tfig1_mmg_model.png" alt="MMG 模型" />
+<figcaption aria-hidden="true">MMG 模型</figcaption>
+</figure>
+<h3 id="状态量">3.1 状态量</h3>
+<p><code>ShipState</code>（dynamics.py:11-20）：<code>x, y, psi, u, v, r, delta, n</code>
+共 8 个。</p>
+<h3 id="mmg-水动力dynamics.py96-101">3.2 MMG
+水动力（dynamics.py:96-101）</h3>
+<pre><code>X = x_u·u + x_uu·|u|·u + x_n·n·|n|          # 纵向力：阻力 + 螺旋桨推力
+Y = y_v·v + y_r·r + y_vv·|v|·v + y_δ·u²·δ   # 横向力：粘性 + 舵力
+N = n_v·v + n_r·r + n_rr·|r|·r + n_δ·u²·δ   # 艏摇力矩：阻尼 + 舵效</code></pre>
+<p>14 个水动力系数见
+<code>MMGParameters</code>（config.py:8-22），默认值对应一艘小型无人艇量级（<code>m_u=35, m_v=45, i_z=18</code>）。实际项目可通过
+<code>identification.py</code> 从试验数据辨识替换。</p>
+<h3 id="运动方程与积分dynamics.py103-135">3.3
+运动方程与积分（dynamics.py:103-135）</h3>
+<pre><code>u̇ = X/m_u + r·v + res_u        # 科氏耦合 r·v
+v̇ = Y/m_v − r·u + res_v
+ṙ = N/i_z + res_r
+ψ += r·dt
+ẋ = cosψ·(u+d_u) − sinψ·(v+d_v)
+ẏ = sinψ·(u+d_u) + cosψ·(v+d_v)</code></pre>
+<p>显式欧拉积分，<code>dt=0.1 s</code>；<code>(d_u, d_v)</code>
+为体坐标系流扰（阶段 2
+还会随机游走漂移，env.py:270-273）。执行器约束（dynamics.py:111-114）：舵角
+±35°、舵速 ≤4°/s、转速 n∈[0,25]、转速速率 ≤2 rpm/s。</p>
+<h3 id="残差网络dynamics.py23-62">3.4 残差网络（dynamics.py:23-62）</h3>
+<p><code>ResidualModel</code>：tanh MLP <code>5→64→64→3</code>，输入
+<code>[u,v,r,delta,n]</code>，输出经
+<code>[0.08,0.08,0.05]·tanh(·)</code>
+限幅后叠加到三个加速度通道，用于补偿 MMG
+多项式之外的未建模动力学。权重由
+<code>scripts/ship_3dof/train_residual.py</code> 在试验数据上训练，经 M2
+门控（验证损失下降
+≥0.2）后才会被加载（<code>residual_model_path</code>，env.py:41-43）。</p>
+<h3 id="域随机化dynamics.py88-94">3.5 域随机化（dynamics.py:88-94）</h3>
+<p>每回合按阶段幅度对全部 14 个 MMG
+系数做乘性随机化：<code>param × U(1±amplitude)</code>（阶段 0/1/2 分别
+±3%/±8%/±15%），这是 sim2real 鲁棒性的主要手段之一。</p>
+<hr />
+<h2 id="参考路径与跟踪误差path.py">4. 参考路径与跟踪误差（path.py）</h2>
+<ul>
+<li><code>ReferencePath</code>（path.py:22-53）：弧长
+<code>s∈[0,1000]</code>、步长 1
+m；横向偏移为两个正弦谐波叠加：<code>y = 12κL·sin(2πs/L+φ₁) + 6κL·sin(4πs/L+φ₂)</code>，相位
+φ 随机，κ≈0.0025 并按阶段缩放（×0.65/0.85/1.0）；</li>
+<li><code>closest_point(x, y)</code>（path.py:59-74）：带
+<code>_last_closest</code> 缓存的窗口搜索，避免每步全路径扫描；</li>
+<li><code>signed_cross_track_error</code>（path.py:76-80）：沿路径法线的有符号横向误差
+<code>e_y</code>；</li>
+<li><code>y_at_s(s)</code>：弧长插值取横向位置（出生点对齐用，见
+§8）。</li>
+</ul>
+<hr />
+<h2 id="奖励函数与终止条件env.py195-237">5.
+奖励函数与终止条件（env.py:195-237）</h2>
+<figure>
+<img src="figures/tfig4_reward.png" alt="奖励构成" />
+<figcaption aria-hidden="true">奖励构成</figcaption>
+</figure>
+<pre><code>reward = r_progress − r_track − r_heading − r_smooth − r_energy − r_safety</code></pre>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>项</th>
+<th>表达式（env.py:203-210）</th>
+<th>设计意图</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>进度</td>
+<td><code>0.85 · clip(Δs, 0, 1.25)</code></td>
+<td>每步沿路径前进的弧长给正奖励（上限防刷分）</td>
+</tr>
+<tr class="even">
+<td>横偏</td>
+<td><code>1.1·|e_y| + 0.35·e_y²</code></td>
+<td>偏离航线的线性+二次惩罚</td>
+</tr>
+<tr class="odd">
+<td>航向</td>
+<td><code>0.6·|e_psi| + 0.08·r²</code></td>
+<td>航向误差与艏摇阻尼</td>
+</tr>
+<tr class="even">
+<td>平滑</td>
+<td><code>0.03·δ̇² + 0.015·ṅ²</code></td>
+<td>抑制舵机/主机抖动（保护执行器）</td>
+</tr>
+<tr class="odd">
+<td>能耗</td>
+<td><code>0.005·n²</code></td>
+<td>抑制不必要的高转速</td>
+</tr>
+<tr class="even">
+<td>安全</td>
+<td><code>3·碰撞 + 4·(|e_y|&gt;8)</code></td>
+<td>硬约束的软惩罚（出半航道即罚）</td>
+</tr>
+</tbody>
+</table>
+<p>终止与截断（<code>_termination</code>, env.py:223-237）：</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>条件</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>到达终点 <code>s ≥ final_s − 1</code></td>
+<td>终止，奖励 <code>+50</code>（<code>success=True</code>）</td>
+</tr>
+<tr class="even">
+<td>碰撞 / <code>|e_y|&gt;12</code> / <code>|r|&gt;1.25</code> /
+<code>u∉[−0.5, 4.0]</code> / 出航道</td>
+<td>终止，奖励 <code>−100</code></td>
+</tr>
+<tr class="odd">
+<td><code>step ≥ 3000</code></td>
+<td>截断（TimeLimit）</td>
+</tr>
+</tbody>
+</table>
+<p>每步
+<code>info["reward_terms"]</code>（env.py:212-220）会输出各项分解，是调权重时的主要诊断依据。</p>
+<hr />
+<h2 id="三阶段课程学习">6. 三阶段课程学习</h2>
+<figure>
+<img src="figures/tfig2_curriculum.png" alt="课程学习" />
+<figcaption aria-hidden="true">课程学习</figcaption>
+</figure>
+<p>两套机制配合：</p>
+<ol type="1">
+<li><strong>环境内自动课程</strong>（<code>_select_stage</code>,
+env.py:93-100）：<code>curriculum_stage=None</code>
+时按累计回合数自动升阶段（&lt;300 → 0，&lt;900 → 1，否则 2）；</li>
+<li><strong>训练脚本显式分阶段</strong>（<code>train_ship_3dof.py:143-149</code>）：循环三次调用根
+<code>train.py</code>，每次用
+<code>--env-kwargs curriculum_stage:N</code> 固定阶段，并用
+<code>--trained-agent</code> 从上阶段最终模型热启动。</li>
+</ol>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>阶段</th>
+<th>域随机化</th>
+<th>流扰</th>
+<th>路径曲率</th>
+<th>初始状态</th>
+<th>噪声/滞后</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>±3%</td>
+<td>无</td>
+<td>×0.65</td>
+<td>y_std=0.2 m, ψ_std=1°</td>
+<td>无</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>±8%</td>
+<td>0.55×</td>
+<td>×0.85</td>
+<td>y_std=0.35 m, ψ_std=1.6°</td>
+<td>无</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>±15%</td>
+<td>全量 + 随机游走漂移（±0.6）</td>
+<td>×1.0</td>
+<td>y_std=0.5 m, ψ_std=2.0°</td>
+<td>传感器噪声开、执行器滞后 0.2 s</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="sac-智能体">7. SAC 智能体</h2>
+<figure>
+<img src="figures/tfig3_network.png" alt="SAC 网络结构" />
+<figcaption aria-hidden="true">SAC 网络结构</figcaption>
+</figure>
+<ul>
+<li><strong>Actor</strong>：MLP
+<code>14→512→512→512</code>，输出高斯策略的 <code>μ, log_std</code>（各
+2 维），重参数采样后经 tanh 压缩到 <code>[-1,1]²</code>；</li>
+<li><strong>Critic</strong>：双 Q 网络
+<code>(14+2)→512→512→512→1</code>，取 <code>min(Q₁,Q₂)</code>
+抑制过估计；熵温度系数 <code>α</code>
+自动调节（<code>ent_coef="auto"</code>）；</li>
+<li><strong>探索</strong>：<code>use_sde=True</code>（状态相关探索噪声）。</li>
+</ul>
+<p>超参数基线在 <code>hyperparams/sac.yml:266</code> 的
+<code>ShipPathTracking3DOF-v0</code> 节，训练脚本再经 CLI
+覆盖（<code>train_ship_3dof.py:86-94</code>）：</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>参数</th>
+<th>值</th>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>learning_rate</td>
+<td>3e-4</td>
+<td>buffer_size</td>
+<td>1e6</td>
+</tr>
+<tr class="even">
+<td>batch_size</td>
+<td>1024（yml 基线 256；实测最优点，见 §15）</td>
+<td>gamma / tau</td>
+<td>0.99 / 0.005</td>
+</tr>
+<tr class="odd">
+<td>train_freq / gradient_steps</td>
+<td>4 / 4</td>
+<td>learning_starts</td>
+<td>5000</td>
+</tr>
+<tr class="even">
+<td>net_arch</td>
+<td>[512,512,512]（yml 基线 [256,256]）</td>
+<td>normalize</td>
+<td>norm_obs=True, norm_reward=False</td>
+</tr>
+<tr class="odd">
+<td>callback</td>
+<td>AccelerateCallback（TF32，见 §15）</td>
+<td>use_sde</td>
+<td>True</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>重要</strong>：训练开启了
+<code>VecNormalize(norm_obs=True)</code>——观测归一化统计保存在模型目录的
+<code>ShipPathTracking3DOF-v0/vecnormalize.pkl</code>。<strong>任何离线评估/渲染都必须加载该统计</strong>，否则策略收到未归一化观测会输出饱和动作（表现为一脚油门撞速度上限自杀）。<code>render_eval_video.py</code>
+会自动探测并加载。</p>
+</blockquote>
+<hr />
+<h2 id="关键修复出生点对齐路径起点">8. 关键修复：出生点对齐路径起点</h2>
+<figure>
+<img src="figures/tfig6_fix.png" alt="出生点修复" />
+<figcaption aria-hidden="true">出生点修复</figcaption>
+</figure>
+<p>这是本模型能训出来的前提（env.py:123-143）：</p>
+<ul>
+<li><strong>修复前</strong>：船固定出生在 <code>(0, 0)</code>
+附近，而路径横向偏移随机 ±20 m——约 1/3 回合出生时
+<code>|e_y|&gt;12</code> 直接失败（−100），训练平均回合长度仅 ~9
+步，策略只能学到”停车保平安”；</li>
+<li><strong>修复后</strong>：以 <code>path.y_at_s(0)</code>
+为基准叠加阶段噪声，初始 <code>|e_y|&lt;0.8 m</code>，回合长度提升到
+2000+ 步；</li>
+<li><strong>配套改动</strong>：<code>path_length 500→1000 m</code>、<code>max_steps 1200→3000</code>、观测
+<code>e_s</code> 缩放 120→250；<code>setup.py</code> 的
+<code>copytree</code> 幂等化（修复新版 pip editable 安装失败）。</li>
+</ul>
+<hr />
+<h2 id="训练执行流程代码级">9. 训练执行流程（代码级）</h2>
+<h3 id="驱动脚本-train_ship_3dof.py">9.1 驱动脚本
+<code>train_ship_3dof.py</code></h3>
+<pre><code>parse_args → for stage, steps in enumerate(phase_steps):      # :143
+    _run_train(n_steps, stage, trained_agent=上一期模型)        # :52
+        拼命令: python train.py --algo sac --env ShipPathTracking3DOF-v0
+                --n-timesteps N --env-kwargs curriculum_stage:N mmg_params_path:&#39;..&#39; residual_model_path:&#39;..&#39;
+                --hyperparams learning_starts:.. batch_size:.. policy_kwargs:dict(net_arch=[..])
+                [--trained-agent 上一期 zip]
+        subprocess.run(cmd)                                    # :99
+        _latest_run() 找最新 ShipPathTracking3DOF-v0_K 目录      # :45
+    → 返回模型路径供下一期热启动
+_summarize_monitor() 打印最近 50 回合平均回报                   # :111</code></pre>
+<p>注意 <code>--env-kwargs</code>
+的字符串值必须内嵌单引号（<code>mmg_params_path:'...'</code>，见
+:81），因为 rl_zoo3 的 <code>StoreDict</code> 会用 <code>eval</code>
+解析值。</p>
+<h3 id="rl_zoo3-内部每次调用-train.py">9.2 rl_zoo3 内部（每次调用
+train.py）</h3>
+<figure>
+<img src="figures/fig2_training_flow.png" alt="训练调用流程" />
+<figcaption aria-hidden="true">训练调用流程</figcaption>
+</figure>
+<p><code>ExperimentManager.setup_experiment()</code> 依次：读
+<code>hyperparams/sac.yml</code>（env_id 精确匹配）→ CLI
+<code>--hyperparams</code> 覆盖 → 预处理（policy_kwargs eval、normalize
+解析）→ 建 VecEnv + VecNormalize → 建 EvalCallback/CheckpointCallback →
+新建 SAC 或 <code>--trained-agent</code> 热加载（含 replay buffer
+续载）→ <code>model.learn()</code> → 保存 zip + vecnormalize.pkl +
+config.yml/args.yml。</p>
+<h3 id="产物目录">9.3 产物目录</h3>
+<pre><code>logs_pipeline/ship3dof_1km/sac/
+├── ShipPathTracking3DOF-v0_1/   # 阶段0（60万步）
+├── ShipPathTracking3DOF-v0_2/   # 阶段1（80万步）
+├── ShipPathTracking3DOF-v0_3/   # 阶段2（105万步，曾中断）
+├── ShipPathTracking3DOF-v0_5/   # 阶段2续训（10万步，最终模型）
+│   ├── ShipPathTracking3DOF-v0.zip        # 最终模型
+│   ├── best_model.zip                     # 评估最优
+│   ├── 0.monitor.csv                      # 逐回合回报/长度
+│   └── ShipPathTracking3DOF-v0/
+│       ├── vecnormalize.pkl               # 观测归一化统计（评估必需）
+│       ├── config.yml / args.yml / command.txt</code></pre>
+<hr />
+<h2 id="实训结果1-km-路径255-万步">10. 实训结果（1 km 路径，255
+万步）</h2>
+<h3 id="训练曲线">10.1 训练曲线</h3>
+<figure>
+<img src="figures/tfig5_training_curves.png" alt="训练曲线" />
+<figcaption aria-hidden="true">训练曲线</figcaption>
+</figure>
+<ul>
+<li>阶段 0/1：回合长度快速爬升到 ~2500 步（接近 3000 上限），回报收敛在
+−300~−500；</li>
+<li>阶段 2（全扰动+噪声+滞后）：难度骤增，回合长度回落到 400~700
+步并缓慢爬升——该阶段 105
+万步时尚未完全收敛（也因中断损失了尾部训练）；</li>
+<li>中断续训（紫色）验证了 <code>--trained-agent</code>
+热启动流程的可用性。</li>
+</ul>
+<h3 id="评估表现">10.2 评估表现</h3>
+<p>最终模型（<code>ShipPathTracking3DOF-v0_5</code>）在阶段 2
+全难度、seed 1 下：连续航行 <strong>59 s / 约 155
+m</strong>，横向误差全程稳定在 <strong>±1.5 m</strong> 以内（航道半宽 8
+m），航向误差 ±3°，舵角动作平滑（±0.3°）。</p>
+<figure>
+<img src="figures/tfig7_eval_frame.png" alt="评估视频帧" />
+<figcaption aria-hidden="true">评估视频帧</figcaption>
+</figure>
+<p>完整视频：<code>/media/jim/jim_11/rl-zoo3-ship3dof-docker/artifacts/ship_3dof/demo_1km_video.mp4</code>（VLC
+需关闭硬件解码或用 <code>--avcodec-hw=none</code>）。</p>
+<blockquote>
+<p>注：当前模型尚未通过 M3 门控（成功率 ≥0.95）。阶段 2
+曲线表明还需更多训练步数；要达到放行标准，建议在同一模型上继续热启动加训，或用
+<code>autotune_ship_3dof.py</code> 搜索更优超参。</p>
+</blockquote>
+<hr />
+<h2 id="复现命令">11. 复现命令</h2>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 进入开发容器</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/media/jim/jim_11/rl-zoo3-ship3dof-docker/run_dev.sh</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 全流程流水线（含 M1-M4 门控）</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/run_known_mmg_pipeline.py <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mmg-params</span> scripts/ship_3dof/mmg_params_example.json <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--generate-trials-if-missing</span> <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--log-folder</span> logs_pipeline/full_run <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phase-steps</span> 600000 800000 1100000 <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--learning-starts</span> 5000 <span class="at">--batch-size</span> 1024 <span class="at">--net-arch</span> 512,512,512 <span class="dt">\</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seed</span> 42 <span class="at">--device</span> cuda <span class="at">--run-tag</span> full_1km</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 仅课程训练（本文使用的命令）</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/train_ship_3dof.py <span class="dt">\</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--log-folder</span> logs_pipeline/ship3dof_1km <span class="dt">\</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mmg-params</span> scripts/ship_3dof/mmg_params_example.json <span class="dt">\</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--residual-model</span> artifacts/ship_3dof/runs/demo_smoke/residual_model.npz <span class="dt">\</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phase-steps</span> 600000 800000 1100000 <span class="dt">\</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--learning-starts</span> 5000 <span class="at">--batch-size</span> 1024 <span class="at">--net-arch</span> 512,512,512 <span class="dt">\</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seed</span> 42 <span class="at">--device</span> cuda</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># 中断后续训（热启动）</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train.py <span class="at">--algo</span> sac <span class="at">--env</span> ShipPathTracking3DOF-v0 <span class="dt">\</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--log-folder</span> logs_pipeline/ship3dof_1km <span class="at">--seed</span> 42 <span class="at">--device</span> cuda <span class="dt">\</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--n-timesteps</span> 100000 <span class="dt">\</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trained-agent</span> logs_pipeline/ship3dof_1km/sac/ShipPathTracking3DOF-v0_3/best_model.zip <span class="dt">\</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">--env-kwargs</span> curriculum_stage:2 <span class="st">&quot;mmg_params_path:&#39;scripts/ship_3dof/mmg_params_example.json&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;residual_model_path:&#39;artifacts/ship_3dof/runs/demo_smoke/residual_model.npz&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">--hyperparams</span> learning_starts:5000 learning_rate:0.0003 train_freq:4 gradient_steps:4 <span class="dt">\</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    batch_size:1024 <span class="st">&#39;policy_kwargs:dict(net_arch=[512,512,512])&#39;</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="co"># 渲染效果视频（自动加载 vecnormalize.pkl）</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/render_eval_video.py <span class="dt">\</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">--model</span> logs_pipeline/ship3dof_1km/sac/ShipPathTracking3DOF-v0_5/ShipPathTracking3DOF-v0.zip <span class="dt">\</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">--residual-model</span> artifacts/ship_3dof/runs/demo_smoke/residual_model.npz <span class="dt">\</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mmg-params</span> scripts/ship_3dof/mmg_params_example.json <span class="dt">\</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">--curriculum-stage</span> 2 <span class="at">--seed</span> 1 <span class="at">--max-steps</span> 3000 <span class="dt">\</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> artifacts/ship_3dof/demo_1km_video.mp4</span></code></pre></div>
+<hr />
+<h2 id="航道环境搭建流程">13. 航道环境搭建流程</h2>
+<p>本节说明如何从零搭建（或自定义）一个船舶运行的航道环境，对应下图的五个步骤：</p>
+<figure>
+<img src="figures/tfig8_channel_env.png" alt="航道环境搭建" />
+<figcaption aria-hidden="true">航道环境搭建</figcaption>
+</figure>
+<h3 id="步骤①船舶水动力参数">13.1 步骤①：船舶水动力参数</h3>
+<p>环境的水动力系数来自
+<code>MMGParameters</code>（config.py:8-22），两种提供方式：</p>
+<ul>
+<li><strong>已知参数</strong>：写成 JSON（格式见
+<code>scripts/ship_3dof/mmg_params_example.json</code>，支持裸 dict
+或嵌套 <code>"mmg_params"</code> 键，env.py:79-91 解析），经
+<code>--env-kwargs "mmg_params_path:'&lt;路径&gt;'"</code> 注入；</li>
+<li><strong>实船辨识</strong>：按
+<code>scripts/ship_3dof/trial_template.csv</code> 准备试验 CSV（列
+<code>t,x,y,psi,u,v,r,delta,n</code>），运行辨识链：</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 无实船数据时先用名义参数合成试验数据</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/generate_mmg_trials.py <span class="at">--output-dir</span> artifacts/ship_3dof/trials</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 辨识：Nomoto(K,T) → MMG 岭回归 → 多重打靶精修 → 回放验证</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/identify_mmg.py <span class="dt">\</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trial-dir</span> artifacts/ship_3dof/trials <span class="dt">\</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> artifacts/ship_3dof/identified_mmg_params.json</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># M1 门控：回放误差 rmse_ψ≤5°, rmse_r≤0.1</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/check_mmg_baseline.py <span class="dt">\</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mmg-params</span> artifacts/ship_3dof/identified_mmg_params.json <span class="dt">\</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trial-dir</span> artifacts/ship_3dof/trials</span></code></pre></div>
+<h3 id="步骤②残差模型可选但推荐">13.2 步骤②：残差模型（可选但推荐）</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/ship_3dof/train_residual.py <span class="dt">\</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trial-dir</span> artifacts/ship_3dof/trials <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mmg-params</span> artifacts/ship_3dof/identified_mmg_params.json <span class="dt">\</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> artifacts/ship_3dof/residual_model.npz</span></code></pre></div>
+<p>产出 <code>residual_metrics.json</code>，验证损失下降 ≥0.2（M2
+门控）才应在环境中通过 <code>residual_model_path</code>
+加载（env.py:41-43）；不达标说明 MMG 模型已足够或数据质量差，直接使用裸
+MMG 即可。</p>
+<h3 id="步骤③航道几何与边界">13.3 步骤③：航道几何与边界</h3>
+<table>
+<thead>
+<tr class="header">
+<th>配置项（EnvironmentConfig, config.py:51-73）</th>
+<th>默认</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path_length</code></td>
+<td>1000.0</td>
+<td>航道中心线长度（m）</td>
+</tr>
+<tr class="even">
+<td><code>waypoint_step</code></td>
+<td>1.0</td>
+<td>路径离散步长 ds（m）</td>
+</tr>
+<tr class="odd">
+<td><code>path_curvature</code></td>
+<td>0.0025</td>
+<td>曲率基准 κ，谐波幅值 = 12κL / 6κL</td>
+</tr>
+<tr class="even">
+<td><code>channel_half_width</code></td>
+<td>8.0</td>
+<td>航道半宽（超出持续罚 −4/步）</td>
+</tr>
+<tr class="odd">
+<td><code>fail_cross_track</code></td>
+<td>12.0</td>
+<td>失败线：横向误差超限即终止（−100）</td>
+</tr>
+<tr class="even">
+<td><code>max_steps</code></td>
+<td>3000</td>
+<td>单回合最长步数（×0.1 s = 300 s）</td>
+</tr>
+</tbody>
+</table>
+<p>障碍物经构造参数 <code>obstacles=[(x, y, radius), ...]</code>
+传入（env.py:34, 50, 189-193），进入半径即判碰撞。</p>
+<blockquote>
+<p><strong>使用真实航道中心线</strong>：当前
+<code>_build_path</code>（env.py:113-121）生成双谐波合成路径。若要导入实测航道（如电子海图中心线
+waypoint 序列），改造点是
+<code>ReferencePath._build_points</code>（path.py:33-38）——将
+<code>(self._x, self._y)</code>
+替换为实测坐标并保证等弧长采样即可，<code>closest_point</code> /
+误差计算 / 出生点对齐全部自动适配。</p>
+</blockquote>
+<p>传入自定义配置的方式（config dict 会展开进
+<code>EnvironmentConfig</code>，env.py:37）：</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>env <span class="op">=</span> gym.make(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ShipPathTracking3DOF-v0&quot;</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>{<span class="st">&quot;path_length&quot;</span>: <span class="fl">2000.0</span>, <span class="st">&quot;channel_half_width&quot;</span>: <span class="fl">10.0</span>, <span class="st">&quot;path_curvature&quot;</span>: <span class="fl">0.0018</span>},</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    obstacles<span class="op">=</span>[(<span class="fl">420.0</span>, <span class="fl">30.0</span>, <span class="fl">5.0</span>), (<span class="fl">700.0</span>, <span class="op">-</span><span class="fl">25.0</span>, <span class="fl">4.0</span>)],</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    curriculum_stage<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="步骤④扰动与传感器">13.4 步骤④：扰动与传感器</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>配置项</th>
+<th>默认</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>disturbance_scale</code></td>
+<td>0.25</td>
+<td>流扰幅值基准（阶段 1 取 0.55×、阶段 2 取全量 + 随机游走漂移
+±0.6，env.py:105-111, 270-273）</td>
+</tr>
+<tr class="even">
+<td><code>sensor_noise_std</code></td>
+<td>e_y 0.03 / e_psi 0.01 / u,v 0.015 / r 0.01</td>
+<td>阶段 2 观测高斯噪声（env.py:159-162）</td>
+</tr>
+<tr class="odd">
+<td><code>actuator_lag</code></td>
+<td>0.2</td>
+<td>阶段 2 执行器一阶滞后时间常数（s，env.py:261-267）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="步骤⑤实例化与冒烟验证">13.5 步骤⑤：实例化与冒烟验证</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gymnasium <span class="im">as</span> gym</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> custom_envs  <span class="co"># 触发注册（rl_zoo3/import_envs.py 训练时自动做）</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>env <span class="op">=</span> gym.make(</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ShipPathTracking3DOF-v0&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    mmg_params_path<span class="op">=</span><span class="st">&quot;artifacts/ship_3dof/identified_mmg_params.json&quot;</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    residual_model_path<span class="op">=</span><span class="st">&quot;artifacts/ship_3dof/residual_model.npz&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    curriculum_stage<span class="op">=</span><span class="dv">0</span>,          <span class="co"># 验证期建议固定阶段；None 为自动课程</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>obs, info <span class="op">=</span> env.reset(seed<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>obs, r, te, tr, i <span class="op">=</span> env.step(env.action_space.sample())</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>env.close()</span></code></pre></div>
+<p>验证清单：</p>
+<ul>
+<li><code>pytest tests/test_ship_3dof_env.py</code> 通过（注册与 API
+契约）；</li>
+<li>多次 reset 检查初始 <code>|e_y| &lt; 1 m</code>（出生点对齐生效，见
+§8）；</li>
+<li>用 <code>render_eval_video.py</code>
+渲染任一策略（甚至随机策略）确认航道形状符合预期。</li>
+</ul>
+<h3 id="注入训练">13.6 注入训练</h3>
+<p>环境 kwargs 全部经 CLI 传入（注意字符串值内嵌单引号，见 §9.1）：</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train.py <span class="at">--algo</span> sac <span class="at">--env</span> ShipPathTracking3DOF-v0 <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--env-kwargs</span> curriculum_stage:0 <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;mmg_params_path:&#39;artifacts/ship_3dof/identified_mmg_params.json&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;residual_model_path:&#39;artifacts/ship_3dof/residual_model.npz&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  ...</span></code></pre></div>
+<p>障碍物与 config dict 属于非字符串复杂对象，CLI 不便传递，建议在
+Python 侧用 <code>gym.make</code> 或修改
+<code>hyperparams/sac.yml</code> 对应节的 <code>env_kwargs</code>（yml
+原生支持 list/dict）。</p>
+<hr />
+<h2 id="常见问题faq">14. 常见问题（FAQ）</h2>
+<ol type="1">
+<li><strong>评估时船一脚油门超速自杀</strong>：没加载
+<code>vecnormalize.pkl</code>。训练开了
+<code>norm_obs</code>，评估必须配套（见 §7）。</li>
+<li><strong>视频黑屏</strong>：本机 GPU 硬解兼容问题，VLC 加
+<code>--avcodec-hw=none</code>；渲染脚本已固定输出 yuv420p/main
+profile/faststart。</li>
+<li><strong><code>--env-kwargs</code> 报
+NameError</strong>：字符串值少了内嵌单引号（见 §9.1）。</li>
+<li><strong>回合一步即死（return≈−100）</strong>：多为出生点未对齐路径起点（旧代码），见
+§8；或观测路径/参数文件路径写错。</li>
+<li><strong>训练中断如何续</strong>：用最近目录的
+<code>best_model.zip</code> + <code>--trained-agent</code>
+热启动补训（见 §11），monitor 曲线可拼接（<code>tfig5</code>
+的紫色段即是）。</li>
+<li><strong>想加速训练</strong>：直接用脚本默认配置即可（TF32 + batch
+1024）；不要靠降低更新节奏（gradient_steps）提速，实测学习质量会显著恶化——详见
+§15。</li>
+</ol>
+<hr />
+<h2 id="训练速度优化实测数据">15. 训练速度优化（实测数据）</h2>
+<h3 id="瓶颈定位">15.1 瓶颈定位</h3>
+<p>SAC 单步耗时 ≈ 梯度更新（~4.8 ms，占 77%）+ 环境交互（~1.4
+ms）。船舶环境为纯 numpy
+轻量计算，<strong>梯度更新是唯一瓶颈</strong>；且 512³ MLP
+的小批量更新是 kernel 启动延迟主导，GPU 利用率仅 ~8%。</p>
+<h3 id="微基准updatess越高越好">15.2 微基准（updates/s，越高越好）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>batch</th>
+<th>更新吞吐</th>
+<th>单步延迟</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>512</td>
+<td>208.7/s</td>
+<td>4.79 ms</td>
+</tr>
+<tr class="even">
+<td><strong>1024</strong></td>
+<td><strong>229.3/s</strong></td>
+<td><strong>4.36 ms</strong></td>
+</tr>
+<tr class="odd">
+<td>2048</td>
+<td>180.1/s</td>
+<td>5.55 ms</td>
+</tr>
+<tr class="even">
+<td>4096</td>
+<td>116.4/s</td>
+<td>8.59 ms</td>
+</tr>
+</tbody>
+</table>
+<p>TF32 额外 +5.6%（220.4/s <span class="citation"
+data-cites="512">@512</span>）；<code>torch.compile(reduce-overhead)</code>
+再 +2.6%，但因编译模块在 save/load 时存在 state_dict
+前缀风险且收益小，默认关闭（<code>AccelerateCallback(compile_policy=True)</code>
+可开）。</p>
+<h3 id="端到端对比各-50k-步同种子同环境">15.3 端到端对比（各 50k
+步、同种子同环境）</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>配置</th>
+<th>fps</th>
+<th>mean_return_last50</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>旧：batch512 × grad4，无 TF32</td>
+<td>176</td>
+<td>−286</td>
+<td>基线</td>
+</tr>
+<tr class="even">
+<td>batch2048 × grad1（1/4 更新节奏）</td>
+<td>400</td>
+<td><strong>−9492</strong></td>
+<td>提速 2.3 倍但学习崩溃，禁用</td>
+</tr>
+<tr class="odd">
+<td>batch1024 × grad2（1/2 更新节奏）</td>
+<td>330</td>
+<td>−2930</td>
+<td>同样恶化，禁用</td>
+</tr>
+<tr class="even">
+<td><strong>batch1024 × grad4 + TF32（现默认）</strong></td>
+<td>180</td>
+<td><strong>−150</strong></td>
+<td>提速 ~4% 且质量更优，采用</td>
+</tr>
+</tbody>
+</table>
+<h3 id="结论与改动">15.4 结论与改动</h3>
+<ol type="1">
+<li><strong>SAC 的更新节奏（updates/env
+step）是本环境的硬约束</strong>：降节奏换来的 fps
+会以学习质量崩溃为代价，“高 fps 假象”务必用同步数回报曲线证伪；</li>
+<li><strong>现默认配置</strong>：<code>train_ship_3dof.py</code> 默认
+<code>batch_size=1024, gradient_steps=4, train_freq=4</code>，并通过
+rl_zoo3 <code>callback</code> 超参注入
+<code>custom_envs.ship_3dof.accel.AccelerateCallback</code>（<code>learn()</code>
+启动时启用 TF32）；<code>--no-accel</code> 可关闭；</li>
+<li>更大提速需要换算法实现（如 JAX 版
+SAC）或接受学习动态变化后重新调参，不在本次范围；</li>
+<li>复现旧行为：<code>--batch-size 512 --gradient-steps 4 --no-accel</code>。</li>
+</ol>
+<hr />
+<p><em>附图生成脚本：<code>docs/design/generate_figures.py</code>、<code>docs/design/generate_training_figures.py</code>、<code>docs/design/generate_channel_figure.py</code>；训练曲线数据来自
+1km 实训的 monitor CSV。</em></p>
+</body>
+</html>

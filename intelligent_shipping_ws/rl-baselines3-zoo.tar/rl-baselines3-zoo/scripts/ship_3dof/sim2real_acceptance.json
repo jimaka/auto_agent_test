@@ -1,0 +1,29 @@
+{
+  "M1": {
+    "name": "pure_mmg_replay",
+    "criteria": {
+      "rmse_psi_deg_max": 5.0,
+      "rmse_r_max": 0.1
+    }
+  },
+  "M2": {
+    "name": "mmg_plus_residual",
+    "criteria": {
+      "validation_loss_reduction_min": 0.2
+    }
+  },
+  "M3": {
+    "name": "randomized_sim_rl",
+    "criteria": {
+      "success_rate_min": 0.95,
+      "collision_rate_max": 0.0
+    }
+  },
+  "M4": {
+    "name": "shadow_mode_gate",
+    "criteria": {
+      "takeover_recommendation_rate_max": 0.02,
+      "shadow_mode_collision_count_max": 0
+    }
+  }
+}

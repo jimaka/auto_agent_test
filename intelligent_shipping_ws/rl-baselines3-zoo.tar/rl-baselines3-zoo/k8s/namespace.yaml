@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ship3dof
+  labels:
+    app.kubernetes.io/name: ship3dof
+    app.kubernetes.io/part-of: rl-baselines3-zoo

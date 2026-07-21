@@ -1,0 +1,56 @@
+# Ship3DOF RL 训练环境（GPU 版）
+# 构建:  docker build -t ship3dof:latest -f docker/Dockerfile.ship3dof .
+# 运行:  docker run --rm -it --gpus all -v $(pwd):/workspace/rl-zoo ship3dof:latest
+#
+# CPU 服务器可将基础镜像换为 pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime 之外的
+# python:3.11-slim 并自行 pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+ARG BASE_IMAGE=pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# swig + build-essential: 编译 box2d-py（requirements.txt 依赖）
+# ffmpeg: 录制评估视频; git: pip 安装 git 依赖时需要
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+    swig \
+    ffmpeg \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace/rl-zoo
+
+# 先只拷贝依赖清单，充分利用 Docker 层缓存（改代码不触发重装依赖）
+COPY requirements.txt setup.py ./
+COPY rl_zoo3/version.txt ./rl_zoo3/version.txt
+COPY hyperparams ./hyperparams
+COPY rl_zoo3/plots ./rl_zoo3/plots
+
+RUN pip install -r requirements.txt \
+    && pip install scipy \
+    && pip install -e .
+
+# 再拷贝全部代码（含 custom_envs 与 scripts/ship_3dof）
+COPY . .
+
+# 重新以完整代码安装（editable 模式，容器内改代码即时生效）
+RUN pip install -e . --no-deps
+
+# 让 custom_envs 可被 import（train.py 通过 --gym-packages custom_envs 或直接 import）
+ENV PYTHONPATH=/workspace/rl-zoo
+
+# 冒烟测试：环境能注册、能 reset/step
+RUN python -c "\
+import gymnasium as gym; import numpy as np; import custom_envs; \
+env = gym.make('ShipPathTracking3DOF-v0'); \
+obs, info = env.reset(seed=0); \
+obs, r, te, tr, i = env.step(np.zeros(2, dtype=np.float32)); \
+env.close(); \
+print('ShipPathTracking3DOF-v0 OK, obs shape:', obs.shape)"
+
+CMD ["/bin/bash"]
