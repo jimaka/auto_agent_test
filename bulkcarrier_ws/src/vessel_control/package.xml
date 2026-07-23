@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>vessel_control</name>
+  <version>0.2.0</version>
+  <description>Koopman lift (ONNX) + tube MPC (OSQP) ROS1 controller</description>
+  <maintainer email="dev@example.com">vessel_team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>vessel_msgs</build_depend>
+  <build_depend>libeigen3-dev</build_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>vessel_msgs</exec_depend>
+</package>

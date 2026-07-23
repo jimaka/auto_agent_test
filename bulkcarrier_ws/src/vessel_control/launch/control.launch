@@ -1,0 +1,10 @@
+<launch>
+  <arg name="model_path" default="$(find vessel_control)/model_registry/_template"/>
+  <arg name="control_mode" default="koopman_mpc"/>
+
+  <node pkg="vessel_control" type="vessel_control_node" name="vessel_control" output="screen">
+    <rosparam command="load" file="$(find vessel_control)/config/control_default.yaml"/>
+    <param name="model_path" value="$(arg model_path)"/>
+    <param name="control_mode" value="$(arg control_mode)"/>
+  </node>
+</launch>
