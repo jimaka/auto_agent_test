@@ -1,0 +1,7 @@
+ship:
+  Lpp: 65.0
+  B: 12.6
+  # TODO: fill MMG hydrodynamic coefficients from trials or literature
+mmg:
+  integration: rk4
+  dt: 0.05

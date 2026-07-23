@@ -1,0 +1,13 @@
+Ts: 0.25
+nz: 64
+nx: 6
+nu: 2
+horizon_N: 30
+encoder:
+  hidden: [128, 128]
+  activation: relu
+training:
+  batch_size: 256
+  epochs: 200
+  lr: 0.001
+  multi_step_weight: 1.0

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>vessel_identification</name>
+  <version>0.1.0</version>
+  <description>Deep Koopman offline identification and model export</description>
+  <maintainer email="dev@example.com">vessel_team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rospy</exec_depend>
+</package>
