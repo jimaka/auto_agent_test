@@ -1,0 +1,39 @@
+# Catkin / ROS
+bulkcarrier_ws/build/
+bulkcarrier_ws/devel/
+bulkcarrier_ws/install/
+bulkcarrier_ws/logs/
+.catkin_workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Data & models (keep manifests/templates)
+data/raw/
+data/processed/
+*.bag
+*.npz
+!bulkcarrier_ws/src/vessel_control/model_registry/**/meta.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ONNX / binaries (trained artifacts)
+**/model_registry/koopman_v*/
+!**/model_registry/_template/
